@@ -5,7 +5,7 @@ import { VENDOR_CATEGORIES } from '../store/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, X, CheckCircle, AlertTriangle, XCircle,
-    ShieldCheck, Clock, Globe, Search, UserCheck,
+    ShieldCheck, Clock, Globe, Search, UserCheck, Info,
 } from 'lucide-react';
 
 export default function VendorRegistryPage() {
@@ -16,6 +16,7 @@ export default function VendorRegistryPage() {
     const [form, setForm] = useState({ name: '', website: '', category: 'software', country: '', description: '' });
     const [verifying, setVerifying] = useState(false);
     const [verifyResult, setVerifyResult] = useState(null);
+    const [showConfirmReject, setShowConfirmReject] = useState(null); // vendorId to confirm reject override
 
     const filtered = vendors.filter(v => {
         if (filter !== 'all' && v.status !== filter) return false;
@@ -50,6 +51,7 @@ export default function VendorRegistryPage() {
             description: form.description,
             status: verifyResult.status === 'approved' ? 'verified' : verifyResult.status === 'needs_manual_review' ? 'pending_review' : 'rejected',
             confidence: verifyResult.confidence,
+            explanation: verifyResult.explanation,
             addedBy: 'CA001',
             addedByName: 'Admin',
             rejectionReason: verifyResult.status === 'rejected' ? verifyResult.reasons.join('. ') : undefined,
@@ -64,6 +66,37 @@ export default function VendorRegistryPage() {
         setForm({ name: '', website: '', category: 'software', country: '', description: '' });
         setVerifyResult(null);
         setVerifying(false);
+    };
+
+    // Admins can override "needs review" but NOT "rejected" without confirmation dialog
+    const handleOverrideApprove = (vendorId) => {
+        const vendor = vendors.find(v => v.id === vendorId);
+        if (vendor?.status === 'rejected') {
+            // Rejected vendors need explicit confirmation
+            setShowConfirmReject(vendorId);
+        } else {
+            approveVendor(vendorId);
+        }
+    };
+
+    const handleConfirmOverride = () => {
+        if (showConfirmReject) {
+            approveVendor(showConfirmReject);
+            setShowConfirmReject(null);
+        }
+    };
+
+    // Helper to build verification explanation string for UI
+    const getVerificationLine = (result) => {
+        if (!result) return '';
+        const { status, confidence, explanation } = result;
+        if (status === 'approved') {
+            return `Verified: ${explanation || 'Domain and name match.'} LLM confidence ${Math.round(confidence * 100)}%.`;
+        }
+        if (status === 'needs_manual_review') {
+            return `Under review — Admin approval required. ${explanation || ''} LLM confidence ${Math.round(confidence * 100)}%.`;
+        }
+        return `Rejected: ${explanation || 'Domain pattern or LLM analysis suggests this is not a legitimate vendor.'}`;
     };
 
     return (
@@ -146,7 +179,7 @@ export default function VendorRegistryPage() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                 <div className="progress-bar" style={{ height: 6, width: 60 }}>
                                                     <div
-                                                        className={`progress-bar-fill ${vendor.confidence >= 0.75 ? 'green' : vendor.confidence >= 0.45 ? 'amber' : 'red'}`}
+                                                        className={`progress-bar-fill ${vendor.confidence >= 0.8 ? 'green' : vendor.confidence >= 0.5 ? 'amber' : 'red'}`}
                                                         style={{ width: `${vendor.confidence * 100}%` }}
                                                     />
                                                 </div>
@@ -169,7 +202,7 @@ export default function VendorRegistryPage() {
                                         <td>
                                             {vendor.status === 'pending_review' && (
                                                 <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                                    <button className="btn btn-success btn-sm" onClick={() => approveVendor(vendor.id)}>
+                                                    <button className="btn btn-success btn-sm" onClick={() => handleOverrideApprove(vendor.id)}>
                                                         <CheckCircle size={12} /> Approve
                                                     </button>
                                                     <button className="btn btn-danger btn-sm" onClick={() => rejectVendor(vendor.id, 'Rejected by admin after manual review')}>
@@ -177,10 +210,20 @@ export default function VendorRegistryPage() {
                                                     </button>
                                                 </div>
                                             )}
-                                            {vendor.status === 'rejected' && vendor.rejectionReason && (
-                                                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--danger-400)' }} title={vendor.rejectionReason}>
-                                                    ⓘ Reason
-                                                </span>
+                                            {vendor.status === 'rejected' && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--danger-400)' }} title={vendor.rejectionReason}>
+                                                        ⓘ Reason
+                                                    </span>
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        style={{ fontSize: 'var(--text-xs)' }}
+                                                        onClick={() => handleOverrideApprove(vendor.id)}
+                                                        title="Override rejection (requires confirmation)"
+                                                    >
+                                                        Override
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </motion.tr>
@@ -190,6 +233,56 @@ export default function VendorRegistryPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Confirm Override Dialog */}
+            <AnimatePresence>
+                {showConfirmReject && (
+                    <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowConfirmReject(null)}>
+                        <motion.div
+                            className="modal-content"
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ maxWidth: 440 }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--space-5)' }}>
+                                <div style={{
+                                    width: 44, height: 44, borderRadius: 'var(--radius-lg)',
+                                    background: 'rgba(239,68,68,0.1)', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    <AlertTriangle size={22} style={{ color: 'var(--danger-400)' }} />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>Override Rejection?</div>
+                                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+                                        This vendor was rejected by the verification pipeline.
+                                    </div>
+                                </div>
+                            </div>
+                            <p style={{
+                                fontSize: 'var(--text-sm)', color: 'var(--text-secondary)',
+                                lineHeight: 1.6, marginBottom: 'var(--space-5)',
+                                padding: 'var(--space-4)', background: 'rgba(239,68,68,0.04)',
+                                borderRadius: 'var(--radius-md)', border: '1px solid rgba(239,68,68,0.15)',
+                            }}>
+                                Overriding a rejected vendor means bypassing the automated verification.
+                                Only do this if you have independently verified the vendor's legitimacy.
+                                This action will be logged.
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                                <button className="btn btn-danger" onClick={handleConfirmOverride}>
+                                    <CheckCircle size={16} /> Yes, Override & Approve
+                                </button>
+                                <button className="btn btn-ghost" onClick={() => setShowConfirmReject(null)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Add Vendor Modal */}
             <AnimatePresence>
@@ -264,13 +357,54 @@ export default function VendorRegistryPage() {
                                                     {Math.round(verifyResult.confidence * 100)}%
                                                 </span>
                                             </div>
+
+                                            {/* Evidence-based explanation */}
+                                            <div style={{
+                                                fontSize: 'var(--text-sm)', color: 'var(--text-secondary)',
+                                                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                marginBottom: 'var(--space-3)', lineHeight: 1.5,
+                                                display: 'flex', alignItems: 'flex-start', gap: 8,
+                                            }}>
+                                                <Info size={14} style={{ marginTop: 2, flexShrink: 0, color: 'var(--text-tertiary)' }} />
+                                                {getVerificationLine(verifyResult)}
+                                            </div>
+
+                                            {/* Risk flags */}
+                                            {verifyResult.llmOutput?.risk_flags?.length > 0 && (
+                                                <div style={{
+                                                    display: 'flex', flexWrap: 'wrap', gap: 4,
+                                                    marginBottom: 'var(--space-3)',
+                                                }}>
+                                                    {verifyResult.llmOutput.risk_flags.map((flag, i) => (
+                                                        <span key={i} className="badge badge-danger" style={{ fontSize: 10 }}>
+                                                            ⚠ {flag.replace(/_/g, ' ')}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Normalized domain shown */}
+                                            {verifyResult.normalizedDomain && (
+                                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--space-3)' }}>
+                                                    Normalized domain: <strong>{verifyResult.normalizedDomain}</strong>
+                                                    {verifyResult.fromCache && <span className="badge badge-info" style={{ marginLeft: 8, fontSize: 9 }}>cached</span>}
+                                                </div>
+                                            )}
+
                                             <ul style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', listStyle: 'disc', paddingLeft: 20, marginBottom: 'var(--space-4)' }}>
                                                 {verifyResult.reasons.map((r, i) => <li key={i}>{r}</li>)}
                                             </ul>
+
                                             {verifyResult.status !== 'rejected' && (
                                                 <button className="btn btn-success" style={{ width: '100%' }} onClick={handleAdd}>
                                                     <CheckCircle size={16} /> {verifyResult.status === 'approved' ? 'Add to Registry' : 'Submit for Review'}
                                                 </button>
+                                            )}
+                                            {verifyResult.status === 'rejected' && (
+                                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--danger-400)', fontWeight: 600, textAlign: 'center' }}>
+                                                    Domain pattern or LLM analysis suggests this is not a legitimate vendor. Check URL and try again.
+                                                </p>
                                             )}
                                         </motion.div>
                                     )}

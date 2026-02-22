@@ -1941,3 +1941,359 @@ tr:hover td {
 .info-400 {
   color: #60a5fa;
 }
+
+/* ═══════════════════════════
+   AUTH ENHANCEMENTS
+   ═══════════════════════════ */
+
+.input-error {
+  border-color: var(--danger-400) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.input-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  margin-top: var(--space-1);
+  line-height: 1.4;
+}
+
+.input-hint.error {
+  color: var(--danger-400);
+}
+
+.input-hint.success {
+  color: var(--accent-400);
+}
+
+.input-hint.info {
+  color: var(--text-tertiary);
+}
+
+.input-hint a {
+  color: var(--primary-400);
+  font-weight: 600;
+}
+
+/* Password field with toggle */
+.input-password-wrapper {
+  position: relative;
+}
+
+.input-password-wrapper .input {
+  padding-right: 44px;
+}
+
+.input-password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-2);
+  display: flex;
+  align-items: center;
+  transition: color var(--transition-fast);
+}
+
+.input-password-toggle:hover {
+  color: var(--text-primary);
+}
+
+/* Password strength indicator */
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.password-strength-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.password-strength-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+.password-strength-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  min-width: 48px;
+  text-align: right;
+}
+
+.password-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-1);
+}
+
+/* Auth error banner */
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+  color: var(--danger-400);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Forgot password link */
+.auth-forgot-link {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-family: var(--font-primary);
+  transition: color var(--transition-fast);
+}
+
+.auth-forgot-link:hover {
+  color: var(--primary-400);
+}
+
+/* ═══════════════════════════
+   BATCH ALLOCATION
+   ═══════════════════════════ */
+
+.batch-results {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.batch-results-header {
+  margin-bottom: var(--space-4);
+}
+
+.batch-results-summary {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+}
+
+/* Global parameter chips */
+.batch-global-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.batch-param-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.batch-param-chip.gold {
+  background: rgba(255, 179, 71, 0.08);
+  border-color: rgba(255, 179, 71, 0.15);
+  color: var(--rupee-gold);
+}
+
+/* Batch Review Table */
+.batch-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+}
+
+.batch-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.batch-table th {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-glass);
+}
+
+.batch-table td {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-secondary);
+  vertical-align: middle;
+}
+
+.batch-table tr:last-child td {
+  border-bottom: none;
+}
+
+.batch-table tr:hover td {
+  background: var(--bg-glass);
+}
+
+.batch-row-disabled td {
+  opacity: 0.4;
+}
+
+.batch-user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.batch-user-unresolved {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.batch-user-select {
+  font-size: var(--text-xs) !important;
+  padding: var(--space-1) var(--space-2) !important;
+  min-width: 160px;
+}
+
+.batch-edit-input {
+  font-size: var(--text-sm) !important;
+  padding: var(--space-1) var(--space-2) !important;
+  width: 100px;
+}
+
+.batch-amount {
+  font-weight: 700;
+  color: var(--primary-400);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.batch-amount:hover {
+  color: var(--primary-300);
+  text-decoration: underline;
+}
+
+/* Batch Total Bar */
+.batch-total-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background: var(--bg-glass);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+}
+
+/* Batch Intent Cards (Individual multi-category) */
+.batch-intent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.batch-intent-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  transition: all var(--transition-base);
+}
+
+.batch-intent-card:hover {
+  border-color: var(--primary-400);
+  box-shadow: 0 0 20px rgba(59, 78, 255, 0.08);
+}
+
+.batch-intent-card.disabled {
+  opacity: 0.4;
+}
+
+.batch-intent-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.batch-intent-card-category {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--primary-400);
+  text-transform: capitalize;
+}
+
+.batch-intent-card-body {
+  padding: var(--space-1) 0;
+}
+
+.batch-intent-card-amount {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  margin-bottom: var(--space-2);
+}
+
+.batch-intent-card-meta {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-500);
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .batch-table-wrapper {
+    font-size: var(--text-xs);
+  }
+
+  .batch-intent-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .batch-total-bar {
+    flex-direction: column;
+    gap: var(--space-2);
+    text-align: center;
+  }
+}

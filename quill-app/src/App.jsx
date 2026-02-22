@@ -24,6 +24,7 @@ import BusinessAnalyticsPage from './pages/BusinessAnalyticsPage';
 import BusinessCheckoutPage from './pages/BusinessCheckoutPage';
 import VendorRegistryPage from './pages/VendorRegistryPage';
 import AdminLogsPage from './pages/AdminLogsPage';
+import BatchAllocationPage from './pages/BatchAllocationPage';
 import { EmployeeDashboard, EmployeeRequestPage, EmployeeAllocationsPage } from './pages/EmployeePages';
 
 // Layout with Sidebar
@@ -88,6 +89,9 @@ function AppRoutes() {
       </Route>
       <Route element={<RequireAuth><AppLayout title="Create Budget" /></RequireAuth>}>
         <Route path="/business/create-budget" element={<CreateBudgetPage />} />
+      </Route>
+      <Route element={<RequireAuth><AppLayout title="Batch Allocation" /></RequireAuth>}>
+        <Route path="/business/batch-allocation" element={<BatchAllocationPage />} />
       </Route>
       <Route element={<RequireAuth><AppLayout title="Requests" /></RequireAuth>}>
         <Route path="/business/requests" element={<RequestsPage />} />

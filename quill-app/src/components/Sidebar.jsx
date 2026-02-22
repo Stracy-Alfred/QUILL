@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import {
     LayoutDashboard, Target, CreditCard, BarChart3, Settings,
     Users, Wallet, FileCheck, ShieldCheck, Store, LogOut,
-    Sun, Moon, Bell, ClipboardList, Building2,
+    Sun, Moon, Bell, ClipboardList, Building2, Layers,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -31,6 +31,7 @@ export default function Sidebar() {
         { to: '/business/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
         { to: '/business/budgets', icon: <Wallet size={20} />, label: 'Budgets & Intents' },
         { to: '/business/create-budget', icon: <Target size={20} />, label: 'Create Budget' },
+        { to: '/business/batch-allocation', icon: <Layers size={20} />, label: 'Batch Allocation' },
         { to: '/business/requests', icon: <FileCheck size={20} />, label: 'Requests' },
         { to: '/business/vendors', icon: <Building2 size={20} />, label: 'Vendor Registry' },
         { to: '/business/team', icon: <Users size={20} />, label: 'Team & Roles' },

@@ -5,7 +5,7 @@ import { VENDOR_CATEGORIES } from '../store/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, X, CheckCircle, AlertTriangle, XCircle, ShieldCheck,
-    Clock, Globe, ExternalLink, Search,
+    Clock, Globe, ExternalLink, Search, Info,
 } from 'lucide-react';
 
 export default function VendorsPage() {
@@ -50,6 +50,7 @@ export default function VendorsPage() {
             description: form.description,
             status: verifyResult.status === 'approved' ? 'verified' : verifyResult.status === 'needs_manual_review' ? 'pending_review' : 'rejected',
             confidence: verifyResult.confidence,
+            explanation: verifyResult.explanation,
             addedBy: 'individual',
             addedByName: 'You',
             rejectionReason: verifyResult.status === 'rejected' ? verifyResult.reasons.join('. ') : undefined,
@@ -64,6 +65,19 @@ export default function VendorsPage() {
         setForm({ name: '', website: '', category: 'software', country: '', description: '' });
         setVerifyResult(null);
         setVerifying(false);
+    };
+
+    // Helper to build verification explanation string for UI
+    const getVerificationLine = (result) => {
+        if (!result) return '';
+        const { status, confidence, explanation } = result;
+        if (status === 'approved') {
+            return `Verified: ${explanation || 'Domain and name match.'} LLM confidence ${Math.round(confidence * 100)}%.`;
+        }
+        if (status === 'needs_manual_review') {
+            return `Under review — Admin approval required. ${explanation || ''} LLM confidence ${Math.round(confidence * 100)}%.`;
+        }
+        return `Rejected: ${explanation || 'Domain pattern or LLM analysis suggests this is not a legitimate vendor.'}`;
     };
 
     return (
@@ -154,7 +168,7 @@ export default function VendorsPage() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                 <div className="progress-bar" style={{ height: 6, width: 60 }}>
                                                     <div
-                                                        className={`progress-bar-fill ${vendor.confidence >= 0.75 ? 'green' : vendor.confidence >= 0.45 ? 'amber' : 'red'}`}
+                                                        className={`progress-bar-fill ${vendor.confidence >= 0.8 ? 'green' : vendor.confidence >= 0.5 ? 'amber' : 'red'}`}
                                                         style={{ width: `${vendor.confidence * 100}%` }}
                                                     />
                                                 </div>
@@ -281,6 +295,37 @@ export default function VendorsPage() {
                                                     {Math.round(verifyResult.confidence * 100)}% confidence
                                                 </span>
                                             </div>
+
+                                            {/* Evidence-based explanation */}
+                                            <div style={{
+                                                fontSize: 'var(--text-sm)', color: 'var(--text-secondary)',
+                                                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                marginBottom: 'var(--space-3)', lineHeight: 1.5,
+                                                display: 'flex', alignItems: 'flex-start', gap: 8,
+                                            }}>
+                                                <Info size={14} style={{ marginTop: 2, flexShrink: 0, color: 'var(--text-tertiary)' }} />
+                                                {getVerificationLine(verifyResult)}
+                                            </div>
+
+                                            {/* Risk flags */}
+                                            {verifyResult.llmOutput?.risk_flags?.length > 0 && (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 'var(--space-3)' }}>
+                                                    {verifyResult.llmOutput.risk_flags.map((flag, i) => (
+                                                        <span key={i} className="badge badge-danger" style={{ fontSize: 10 }}>
+                                                            ⚠ {flag.replace(/_/g, ' ')}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Normalized domain */}
+                                            {verifyResult.normalizedDomain && (
+                                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--space-3)' }}>
+                                                    Normalized domain: <strong>{verifyResult.normalizedDomain}</strong>
+                                                    {verifyResult.fromCache && <span className="badge badge-info" style={{ marginLeft: 8, fontSize: 9 }}>cached</span>}
+                                                </div>
+                                            )}
 
                                             <ul style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', listStyle: 'disc', paddingLeft: 20, marginBottom: 'var(--space-4)' }}>
                                                 {verifyResult.reasons.map((r, i) => <li key={i}>{r}</li>)}
