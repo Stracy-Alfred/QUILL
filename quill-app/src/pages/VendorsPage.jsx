@@ -1,0 +1,310 @@
+import { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { verifyVendor } from '../utils/vendorVerifier';
+import { VENDOR_CATEGORIES } from '../store/mockData';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Plus, X, CheckCircle, AlertTriangle, XCircle, ShieldCheck,
+    Clock, Globe, ExternalLink, Search,
+} from 'lucide-react';
+
+export default function VendorsPage() {
+    const { vendors, addVendor, addToast } = useApp();
+    const [showModal, setShowModal] = useState(false);
+    const [filter, setFilter] = useState('all');
+    const [search, setSearch] = useState('');
+    const [form, setForm] = useState({ name: '', website: '', category: 'software', country: '', description: '' });
+    const [verifying, setVerifying] = useState(false);
+    const [verifyResult, setVerifyResult] = useState(null);
+
+    // Filter for individual user vendors (system + self-added)
+    const filtered = vendors.filter(v => {
+        if (filter !== 'all' && v.status !== filter) return false;
+        if (search && !v.name.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+    });
+
+    const statusConfig = {
+        verified: { icon: <CheckCircle size={14} />, badge: 'badge-success', label: 'Verified' },
+        pending_review: { icon: <Clock size={14} />, badge: 'badge-warning', label: 'Pending Review' },
+        rejected: { icon: <XCircle size={14} />, badge: 'badge-danger', label: 'Rejected' },
+    };
+
+    const handleVerify = async () => {
+        if (!form.name.trim()) return;
+        setVerifying(true);
+        setVerifyResult(null);
+
+        const result = await verifyVendor(form);
+        setVerifyResult(result);
+        setVerifying(false);
+    };
+
+    const handleAdd = () => {
+        if (!verifyResult) return;
+        addVendor({
+            name: verifyResult.normalizedName,
+            website: form.website,
+            category: verifyResult.normalizedCategory,
+            country: form.country,
+            description: form.description,
+            status: verifyResult.status === 'approved' ? 'verified' : verifyResult.status === 'needs_manual_review' ? 'pending_review' : 'rejected',
+            confidence: verifyResult.confidence,
+            addedBy: 'individual',
+            addedByName: 'You',
+            rejectionReason: verifyResult.status === 'rejected' ? verifyResult.reasons.join('. ') : undefined,
+        });
+        setShowModal(false);
+        setForm({ name: '', website: '', category: 'software', country: '', description: '' });
+        setVerifyResult(null);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setForm({ name: '', website: '', category: 'software', country: '', description: '' });
+        setVerifyResult(null);
+        setVerifying(false);
+    };
+
+    return (
+        <div className="animate-fade-in">
+            <div className="page-header">
+                <div>
+                    <h1 className="page-header-title">Vendors & Merchants</h1>
+                    <p className="page-header-sub">Manage your verified vendor list for spending intents</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                    <Plus size={16} /> Add New Vendor
+                </button>
+            </div>
+
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                    <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                    <input
+                        className="input"
+                        style={{ paddingLeft: 36 }}
+                        placeholder="Search vendors..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                </div>
+                {['all', 'verified', 'pending_review', 'rejected'].map(f => (
+                    <button
+                        key={f}
+                        className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => setFilter(f)}
+                    >
+                        {f === 'all' ? 'All' : f === 'pending_review' ? 'Pending' : f.charAt(0).toUpperCase() + f.slice(1)}
+                        <span className="badge badge-info" style={{ marginLeft: 4, fontSize: 10 }}>
+                            {vendors.filter(v => f === 'all' ? true : v.status === f).length}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Vendor Table */}
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Vendor</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Confidence</th>
+                                <th>Added By</th>
+                                <th>Used In</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((vendor, idx) => {
+                                const sc = statusConfig[vendor.status] || statusConfig.pending_review;
+                                return (
+                                    <motion.tr
+                                        key={vendor.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: idx * 0.03 }}
+                                    >
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 600 }}>{vendor.name}</div>
+                                                    {vendor.website && (
+                                                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <Globe size={10} /> {vendor.website.replace('https://', '')}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="badge badge-purple">
+                                                {vendor.category.replace(/_/g, ' ')}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${sc.badge}`} style={{ gap: 4 }}>
+                                                {sc.icon} {sc.label}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <div className="progress-bar" style={{ height: 6, width: 60 }}>
+                                                    <div
+                                                        className={`progress-bar-fill ${vendor.confidence >= 0.75 ? 'green' : vendor.confidence >= 0.45 ? 'amber' : 'red'}`}
+                                                        style={{ width: `${vendor.confidence * 100}%` }}
+                                                    />
+                                                </div>
+                                                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+                                                    {Math.round(vendor.confidence * 100)}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+                                            {vendor.addedByName}
+                                        </td>
+                                        <td>
+                                            <span style={{ fontWeight: 600 }}>{vendor.usedInIntents}</span>
+                                            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}> intent{vendor.usedInIntents !== 1 ? 's' : ''}</span>
+                                        </td>
+                                    </motion.tr>
+                                );
+                            })}
+                            {filtered.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-tertiary)' }}>
+                                        No vendors found
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Add Vendor Modal */}
+            <AnimatePresence>
+                {showModal && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={handleCloseModal}
+                    >
+                        <motion.div
+                            className="modal-content"
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ maxWidth: 560 }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+                                <h3 style={{ fontWeight: 700, fontSize: 'var(--text-xl)' }}>Add New Vendor</h3>
+                                <button className="btn btn-ghost btn-icon sm" onClick={handleCloseModal}><X size={18} /></button>
+                            </div>
+
+                            <div className="auth-form" style={{ gap: 'var(--space-4)' }}>
+                                <div className="input-group">
+                                    <label className="input-label">Vendor Name *</label>
+                                    <input className="input" placeholder="e.g., Figma, Notion, Stripe" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                </div>
+
+                                <div className="input-group">
+                                    <label className="input-label">Website URL (recommended)</label>
+                                    <input className="input" placeholder="https://vendor.com" value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} />
+                                </div>
+
+                                <div className="grid-2" style={{ gap: 'var(--space-4)' }}>
+                                    <div className="input-group">
+                                        <label className="input-label">Category *</label>
+                                        <select className="input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                            {VENDOR_CATEGORIES.map(c => (
+                                                <option key={c} value={c}>{c.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label className="input-label">Country/Region</label>
+                                        <input className="input" placeholder="e.g., USA, India" value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div className="input-group">
+                                    <label className="input-label">Short Description *</label>
+                                    <textarea className="input" placeholder="e.g., Cloud-based design collaboration tool for UI/UX teams" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} style={{ resize: 'vertical' }} />
+                                </div>
+
+                                {/* Verify Button */}
+                                <button
+                                    className="btn btn-primary btn-lg"
+                                    style={{ width: '100%' }}
+                                    onClick={handleVerify}
+                                    disabled={!form.name.trim() || !form.description.trim() || verifying}
+                                >
+                                    {verifying ? (
+                                        <>
+                                            <div className="typing-indicator"><span /><span /><span /></div>
+                                            Verifying via QUILL AI...
+                                        </>
+                                    ) : (
+                                        <><ShieldCheck size={16} /> Verify & Add</>
+                                    )}
+                                </button>
+
+                                {/* Result */}
+                                <AnimatePresence>
+                                    {verifyResult && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0 }}
+                                            style={{
+                                                padding: 'var(--space-5)',
+                                                borderRadius: 'var(--radius-lg)',
+                                                border: `2px solid ${verifyResult.status === 'approved' ? 'var(--accent-400)' : verifyResult.status === 'needs_manual_review' ? 'var(--warning-400)' : 'var(--danger-400)'}`,
+                                                background: verifyResult.status === 'approved' ? 'rgba(16,185,129,0.06)' : verifyResult.status === 'needs_manual_review' ? 'rgba(251,191,36,0.06)' : 'rgba(248,113,113,0.06)',
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
+                                                {verifyResult.status === 'approved' && <CheckCircle size={20} style={{ color: 'var(--accent-400)' }} />}
+                                                {verifyResult.status === 'needs_manual_review' && <AlertTriangle size={20} style={{ color: 'var(--warning-400)' }} />}
+                                                {verifyResult.status === 'rejected' && <XCircle size={20} style={{ color: 'var(--danger-400)' }} />}
+                                                <span style={{ fontWeight: 700 }}>
+                                                    {verifyResult.status === 'approved' ? '✅ Vendor Verified' : verifyResult.status === 'needs_manual_review' ? '⚠️ Needs Manual Review' : '🚫 Verification Failed'}
+                                                </span>
+                                                <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 'var(--text-sm)' }}>
+                                                    {Math.round(verifyResult.confidence * 100)}% confidence
+                                                </span>
+                                            </div>
+
+                                            <ul style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', listStyle: 'disc', paddingLeft: 20, marginBottom: 'var(--space-4)' }}>
+                                                {verifyResult.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                                            </ul>
+
+                                            {verifyResult.status !== 'rejected' && (
+                                                <button className="btn btn-success" style={{ width: '100%' }} onClick={handleAdd}>
+                                                    <CheckCircle size={16} />
+                                                    {verifyResult.status === 'approved' ? 'Add to Vendor List' : 'Submit for Review'}
+                                                </button>
+                                            )}
+                                            {verifyResult.status === 'rejected' && (
+                                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--danger-400)', fontWeight: 600, textAlign: 'center' }}>
+                                                    Please check the URL, category, or description and try again.
+                                                </p>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
